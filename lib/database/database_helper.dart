@@ -1,9 +1,8 @@
+// ignore_for_file: avoid_print
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/cau_hoi.dart';
 import '../models/de_thi.dart';
@@ -15,41 +14,23 @@ class DatabaseHelper {
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
 
-  static const _dbName = 'questions.db';
-  static const _assetPath = 'assets/database/questions.db';
+  static final String baseUrl = Platform.isAndroid 
+      ? 'http://10.0.2.2:5094/api' 
+      : 'http://localhost:5094/api';
 
-  static Database? _database;
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB();
-    return _database!;
+  // Getter giả lập cho database để không làm lỗi file main.dart
+  Future<dynamic> get database async {
+    return Future.value(null);
   }
 
-  Future<Database> _initDB() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
+  // Headers mặc định cho các yêu cầu gửi dữ liệu dạng JSON
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json',
+      };
 
-    if (!await databaseExists(path)) {
-      try {
-        await Directory(dirname(path)).create(recursive: true);
-      } catch (_) {}
-      final data = await rootBundle.load(_assetPath);
-      final bytes = data.buffer.asUint8List(
-        data.offsetInBytes,
-        data.lengthInBytes,
-      );
-      await File(path).writeAsBytes(bytes, flush: true);
-    }
-
-    return openDatabase(
-      path,
-      version: 1,
-      onConfigure: (db) async {
-        await db.execute('PRAGMA foreign_keys = ON');
-      },
-    );
-  }
+  // Giải mã response body bằng UTF-8 để hiển thị đúng tiếng Việt có dấu
+  String _decode(http.Response response) => utf8.decode(response.bodyBytes);
 
   MonHoc _monHocFromRow(Map<String, dynamic> row) {
     final id = row['MaMon'] as int;
@@ -114,12 +95,12 @@ class DatabaseHelper {
       maNguoiDung: row['MaNguoiDung'] as int?,
       deThiId: row['MaChuong'] as int? ?? 0,
       tenDeThi: row['TenChuong'] as String?,
-      diem: (row['Diem'] as num?)?.toDouble() ?? 0,
+      diem: (row['Diem'] as num?)?.toDouble() ?? 0.0,
       soCauDung: soCauDung,
       soCauSai: tongSoCau - soCauDung,
       thoiGianLam: _parseThoiGianFromJson(row['DanhSachDapAnChon'] as String?),
-      ngayThi: DateTime.tryParse(row['NgayLam'] as String? ?? '') ??
-          DateTime.now(),
+      ngayThi:
+          DateTime.tryParse(row['NgayLam'] as String? ?? '') ?? DateTime.now(),
       danhSachDapAnChon: row['DanhSachDapAnChon'] as String?,
     );
   }
@@ -136,239 +117,418 @@ class DatabaseHelper {
 
   // ================= XÁC THỰC NGƯỜI DÙNG =================
   Future<NguoiDung?> login(String tenDangNhap, String matKhau) async {
-    final db = await database;
-    final result = await db.query(
-      'NguoiDung',
-      where: 'TenDangNhap = ? AND MatKhau = ?',
-      whereArgs: [tenDangNhap.trim(), matKhau],
-      limit: 1,
-    );
-    if (result.isEmpty) return null;
-    return NguoiDung.fromMap(result.first);
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: _headers,
+        body: jsonEncode({
+          'TenDangNhap': tenDangNhap.trim(),
+          'MatKhau': matKhau,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(_decode(response));
+        return NguoiDung.fromMap(data);
+      }
+    } catch (e) {
+      print('Lỗi kết nối API login: $e');
+    }
+    return null;
   }
 
   Future<bool> isTenDangNhapExists(String tenDangNhap) async {
-    final db = await database;
-    final result = await db.query(
-      'NguoiDung',
-      where: 'TenDangNhap = ?',
-      whereArgs: [tenDangNhap.trim()],
-      limit: 1,
-    );
-    return result.isNotEmpty;
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/check-username?tenDangNhap=${Uri.encodeComponent(tenDangNhap.trim())}'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as bool;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API check-username: $e');
+    }
+    return false;
   }
 
   Future<int> register(NguoiDung user) async {
-    final db = await database;
-    return await db.insert('NguoiDung', user.toMap());
+    try {
+      // Ánh xạ chuẩn xác cấu trúc bảng NguoiDung của SQL Server backend
+      final Map<String, dynamic> requestBody = {
+        'TenDangNhap': user.tenDangNhap.trim(),
+        'MatKhau': user.matKhau,
+        'HoTen': user.hoTen,
+        'Email': user.email,
+        'MaVaiTro': user.maVaiTro,
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: _headers,
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(_decode(response));
+        return data['MaNguoiDung'] as int? ?? 0;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API register: $e');
+    }
+    return 0;
   }
 
   // ================= QUẢN LÝ MÔN HỌC =================
   Future<int> insertMonHoc(MonHoc monHoc) async {
-    final db = await database;
-    return await db.insert('MonHoc', _monHocToRow(monHoc));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/monhoc'),
+        headers: _headers,
+        body: jsonEncode(_monHocToRow(monHoc)),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API insertMonHoc: $e');
+    }
+    return 0;
   }
 
   Future<List<MonHoc>> getAllMonHoc() async {
-    final db = await database;
-    final result = await db.query('MonHoc', orderBy: 'MaMon ASC');
-    return result.map(_monHocFromRow).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/monhoc'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> listJson = jsonDecode(_decode(response));
+        return listJson.map((item) => _monHocFromRow(item as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getAllMonHoc: $e');
+    }
+    return [];
   }
 
   Future<MonHoc?> getMonHocById(int id) async {
-    final db = await database;
-    final maps = await db.query(
-      'MonHoc',
-      where: 'MaMon = ?',
-      whereArgs: [id],
-    );
-    if (maps.isNotEmpty) return _monHocFromRow(maps.first);
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/monhoc/$id'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(_decode(response));
+        return _monHocFromRow(data);
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getMonHocById: $e');
+    }
     return null;
   }
 
   Future<int> updateMonHoc(MonHoc monHoc) async {
-    final db = await database;
-    return await db.update(
-      'MonHoc',
-      _monHocToRow(monHoc),
-      where: 'MaMon = ?',
-      whereArgs: [monHoc.id],
-    );
+    if (monHoc.id == null) return 0;
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/monhoc/${monHoc.id}'),
+        headers: _headers,
+        body: jsonEncode(_monHocToRow(monHoc)),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API updateMonHoc: $e');
+    }
+    return 0;
   }
 
   Future<int> deleteMonHoc(int id) async {
-    final db = await database;
-    final chuongs = await db.query(
-      'Chuong',
-      columns: ['MaChuong'],
-      where: 'MaMon = ?',
-      whereArgs: [id],
-    );
-    for (final ch in chuongs) {
-      await deleteDeThi(ch['MaChuong'] as int);
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/monhoc/$id'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API deleteMonHoc: $e');
     }
-    return await db.delete('MonHoc', where: 'MaMon = ?', whereArgs: [id]);
+    return 0;
   }
 
   // ================= QUẢN LÝ ĐỀ THI (Chuong) =================
   Future<int> insertDeThi(DeThi deThi) async {
-    final db = await database;
-    int soThuTu = deThi.soThuTu ?? 0;
-    if (soThuTu <= 0) {
-      final maxResult = await db.rawQuery(
-        'SELECT MAX(SoThuTu) as maxStt FROM Chuong WHERE MaMon = ?',
-        [deThi.monHocId],
-      );
-      soThuTu = (maxResult.first['maxStt'] as int? ?? 0) + 1;
-    }
+    try {
+      final Map<String, dynamic> requestBody = {
+        'MaMon': deThi.monHocId,
+        'TenChuong': deThi.tenDe,
+        'SoThuTu': deThi.soThuTu,
+      };
 
-    return await db.insert('Chuong', {
-      'MaMon': deThi.monHocId,
-      'TenChuong': deThi.tenDe,
-      'SoThuTu': soThuTu,
-    });
+      final response = await http.post(
+        Uri.parse('$baseUrl/chuong'),
+        headers: _headers,
+        body: jsonEncode(requestBody),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API insertDeThi: $e');
+    }
+    return 0;
   }
 
   Future<List<DeThi>> getAllDeThi() async {
-    final db = await database;
-    final result = await db.query('Chuong', orderBy: 'MaChuong DESC');
-    return result.map(_deThiFromRow).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/chuong'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> listJson = jsonDecode(_decode(response));
+        return listJson.map((item) => _deThiFromRow(item as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getAllDeThi: $e');
+    }
+    return [];
   }
 
   Future<DeThi?> getDeThiById(int id) async {
-    final db = await database;
-    final maps = await db.query(
-      'Chuong',
-      where: 'MaChuong = ?',
-      whereArgs: [id],
-    );
-    if (maps.isNotEmpty) return _deThiFromRow(maps.first);
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/chuong/$id'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(_decode(response));
+        return _deThiFromRow(data);
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getDeThiById: $e');
+    }
     return null;
   }
 
   Future<List<DeThi>> getDeThiByMonHoc(int monHocId) async {
-    final db = await database;
-    final result = await db.query(
-      'Chuong',
-      where: 'MaMon = ?',
-      whereArgs: [monHocId],
-      orderBy: 'SoThuTu ASC',
-    );
-    return result.map(_deThiFromRow).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/chuong/monhoc/$monHocId'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> listJson = jsonDecode(_decode(response));
+        return listJson.map((item) => _deThiFromRow(item as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getDeThiByMonHoc: $e');
+    }
+    return [];
   }
 
   Future<int> updateDeThi(DeThi deThi) async {
-    final db = await database;
-    return await db.update(
-      'Chuong',
-      {
+    if (deThi.id == null) return 0;
+    try {
+      final Map<String, dynamic> requestBody = {
         'MaMon': deThi.monHocId,
         'TenChuong': deThi.tenDe,
-        if (deThi.soThuTu != null) 'SoThuTu': deThi.soThuTu,
-      },
-      where: 'MaChuong = ?',
-      whereArgs: [deThi.id],
-    );
+        'SoThuTu': deThi.soThuTu,
+      };
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/chuong/${deThi.id}'),
+        headers: _headers,
+        body: jsonEncode(requestBody),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API updateDeThi: $e');
+    }
+    return 0;
   }
 
   Future<int> deleteDeThi(int id) async {
-    final db = await database;
-    await db.delete('CauHoi', where: 'MaChuong = ?', whereArgs: [id]);
-    await db.delete('LichSuLamBai', where: 'MaChuong = ?', whereArgs: [id]);
-    return await db.delete('Chuong', where: 'MaChuong = ?', whereArgs: [id]);
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/chuong/$id'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API deleteDeThi: $e');
+    }
+    return 0;
   }
 
   // ================= QUẢN LÝ CÂU HỎI =================
   Future<int> insertCauHoi(CauHoi cauHoi) async {
-    final db = await database;
-    return await db.insert('CauHoi', _cauHoiToRow(cauHoi));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/cauhoi'),
+        headers: _headers,
+        body: jsonEncode(_cauHoiToRow(cauHoi)),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API insertCauHoi: $e');
+    }
+    return 0;
   }
 
   Future<List<CauHoi>> getCauHoiByDeThi(int deThiId) async {
-    final db = await database;
-    final result = await db.query(
-      'CauHoi',
-      where: 'MaChuong = ?',
-      whereArgs: [deThiId],
-      orderBy: 'MaCauHoi ASC',
-    );
-    return result.map(_cauHoiFromRow).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cauhoi/dethi/$deThiId'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> listJson = jsonDecode(_decode(response));
+        return listJson.map((item) => _cauHoiFromRow(item as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getCauHoiByDeThi: $e');
+    }
+    return [];
   }
 
   Future<List<CauHoi>> getAllCauHoi() async {
-    final db = await database;
-    final result = await db.query('CauHoi', orderBy: 'MaCauHoi DESC');
-    return result.map(_cauHoiFromRow).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cauhoi'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> listJson = jsonDecode(_decode(response));
+        return listJson.map((item) => _cauHoiFromRow(item as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getAllCauHoi: $e');
+    }
+    return [];
   }
 
   Future<CauHoi?> getCauHoiById(int id) async {
-    final db = await database;
-    final maps = await db.query(
-      'CauHoi',
-      where: 'MaCauHoi = ?',
-      whereArgs: [id],
-    );
-    if (maps.isNotEmpty) return _cauHoiFromRow(maps.first);
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cauhoi/$id'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(_decode(response));
+        return _cauHoiFromRow(data);
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getCauHoiById: $e');
+    }
     return null;
   }
 
   Future<int> updateCauHoi(CauHoi cauHoi) async {
-    final db = await database;
-    return await db.update(
-      'CauHoi',
-      _cauHoiToRow(cauHoi),
-      where: 'MaCauHoi = ?',
-      whereArgs: [cauHoi.id],
-    );
+    if (cauHoi.id == null) return 0;
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/cauhoi/${cauHoi.id}'),
+        headers: _headers,
+        body: jsonEncode(_cauHoiToRow(cauHoi)),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API updateCauHoi: $e');
+    }
+    return 0;
   }
 
   Future<int> deleteCauHoi(int id) async {
-    final db = await database;
-    return await db.delete(
-      'CauHoi',
-      where: 'MaCauHoi = ?',
-      whereArgs: [id],
-    );
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/cauhoi/$id'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API deleteCauHoi: $e');
+    }
+    return 0;
   }
 
   // ================= QUẢN LÝ KẾT QUẢ (LichSuLamBai) =================
   Future<int> insertKetQua(KetQua ketQua) async {
-    final db = await database;
-    return await db.insert('LichSuLamBai', ketQua.toMap());
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/lichsulambai'),
+        headers: _headers,
+        body: jsonEncode(ketQua.toMap()),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(_decode(response)) as int;
+      }
+    } catch (e) {
+      print('Lỗi kết nối API insertKetQua: $e');
+    }
+    return 0;
   }
 
   Future<List<KetQua>> getAllKetQua() async {
-    final db = await database;
-    final result = await db.rawQuery('''
-      SELECT ls.*, c.TenChuong
-      FROM LichSuLamBai ls
-      LEFT JOIN Chuong c ON ls.MaChuong = c.MaChuong
-      ORDER BY ls.NgayLam DESC
-    ''');
-    return result.map(_ketQuaFromRow).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/lichsulambai'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> listJson = jsonDecode(_decode(response));
+        return listJson.map((item) => _ketQuaFromRow(item as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getAllKetQua: $e');
+    }
+    return [];
   }
 
   Future<List<KetQua>> getKetQuaByUser(int maNguoiDung) async {
-    final db = await database;
-    final result = await db.rawQuery('''
-      SELECT ls.*, c.TenChuong
-      FROM LichSuLamBai ls
-      LEFT JOIN Chuong c ON ls.MaChuong = c.MaChuong
-      WHERE ls.MaNguoiDung = ?
-      ORDER BY ls.NgayLam DESC
-    ''', [maNguoiDung]);
-    return result.map(_ketQuaFromRow).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/lichsulambai/user/$maNguoiDung'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> listJson = jsonDecode(_decode(response));
+        return listJson.map((item) => _ketQuaFromRow(item as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getKetQuaByUser: $e');
+    }
+    return [];
   }
 
   Future<KetQua?> getKetQuaById(int id) async {
-    final db = await database;
-    final result = await db.rawQuery('''
-      SELECT ls.*, c.TenChuong
-      FROM LichSuLamBai ls
-      LEFT JOIN Chuong c ON ls.MaChuong = c.MaChuong
-      WHERE ls.MaLichSu = ?
-    ''', [id]);
-    if (result.isEmpty) return null;
-    return _ketQuaFromRow(result.first);
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/lichsulambai/$id'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(_decode(response));
+        return _ketQuaFromRow(data);
+      }
+    } catch (e) {
+      print('Lỗi kết nối API getKetQuaById: $e');
+    }
+    return null;
   }
 }

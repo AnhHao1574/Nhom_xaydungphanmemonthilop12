@@ -48,17 +48,36 @@ class AuthService {
       matKhau: matKhau,
       hoTen: hoTen?.trim(),
       email: email?.trim(),
-      maVaiTro: 3,
+      maVaiTro: 3, // Mặc định là học sinh
     );
-    final id = await _db.register(user);
+
+    // Lưu tài khoản vào SQLite thành công sẽ nhận về số ID tự tăng
+    int insertedId;
+    try {
+      insertedId = await _db.register(user);
+    } catch (e) {
+      return "Lỗi đăng ký: $e";
+    }
+    // 🟢 DÒNG LOG 1: Kiểm tra xem SQLite có thực sự phản hồi và cấp ID mới không
+    print(
+      "SQLite Register: Đã chèn thành công dòng mới! ID cấp phát = $insertedId",
+    );
+
+    // ĐÃ SỬA: Sử dụng đúng thuộc tính 'id' theo đúng Model mới của bạn
     _currentUser = NguoiDung(
-      id: id,
+      id: insertedId,
       tenDangNhap: user.tenDangNhap,
       matKhau: user.matKhau,
       hoTen: user.hoTen,
       email: user.email,
       maVaiTro: user.maVaiTro,
     );
+
+    // 🟢 DÒNG LOG 2: Kiểm tra xem AuthService đã giữ được phiên đăng nhập của User này chưa
+    print(
+      "Đăng nhập thẳng thành công! Người dùng hiện tại: ${_currentUser?.tenDangNhap} (ID: ${_currentUser?.id})",
+    );
+
     return null;
   }
 
