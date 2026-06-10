@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../models/cau_hoi.dart';
@@ -197,77 +198,143 @@ class _QuanLyCauHoiScreenState extends State<QuanLyCauHoiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Quản Lý Câu Hỏi'),
-        backgroundColor: Colors.blueGrey,
+        title: const Text('Quản Lý Câu Hỏi', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: _deThis.isEmpty
-                ? const Text('Chưa có đề thi. Hãy tạo đề thi trước.')
-                : DropdownButtonFormField<int>(
-                    value: _selectedDeThiId,
-                    decoration: const InputDecoration(
-                      labelText: 'Chọn đề thi',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _deThis
-                        .map((d) => DropdownMenuItem(
-                              value: d.id,
-                              child: Text(d.tenDe, overflow: TextOverflow.ellipsis),
-                            ))
-                        .toList(),
-                    onChanged: (v) {
-                      setState(() => _selectedDeThiId = v);
-                      _loadCauHoi();
-                    },
-                  ),
+          // Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'images/hinhnen.png',
+              fit: BoxFit.cover,
+            ),
           ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _cauHois.isEmpty
-                    ? const Center(child: Text('Chưa có câu hỏi cho đề thi này.'))
-                    : ListView.builder(
-                        itemCount: _cauHois.length,
-                        itemBuilder: (context, index) {
-                          final ch = _cauHois[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            child: ListTile(
-                              title: Text(
-                                'Câu ${index + 1}: ${ch.noiDung}',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text('Đáp án đúng: ${ch.dapAnDung}'),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
-                                    onPressed: () => _showFormDialog(cauHoi: ch),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () => _confirmDelete(ch),
-                                  ),
-                                ],
-                              ),
+          // Dark Overlay
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.35),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: _deThis.isEmpty
+                      ? const Text('Chưa có đề thi. Hãy tạo đề thi trước.', style: TextStyle(color: Colors.white70))
+                      : DropdownButtonFormField<int>(
+                          isExpanded: true,
+                          value: _selectedDeThiId,
+                          style: const TextStyle(color: Colors.white),
+                          dropdownColor: Colors.blueGrey.shade900,
+                          decoration: InputDecoration(
+                            labelText: 'Chọn đề thi',
+                            labelStyle: const TextStyle(color: Colors.white70),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.white30),
                             ),
-                          );
-                        },
-                      ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.white, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.12),
+                          ),
+                          items: _deThis
+                              .map((d) => DropdownMenuItem(
+                                    value: d.id,
+                                    child: Text(
+                                      d.tenDe,
+                                      style: const TextStyle(color: Colors.white),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (v) {
+                            setState(() => _selectedDeThiId = v);
+                            _loadCauHoi();
+                          },
+                        ),
+                ),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : _cauHois.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Chưa có câu hỏi cho đề thi này.',
+                                style: TextStyle(color: Colors.white70, fontSize: 16),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: _cauHois.length,
+                              itemBuilder: (context, index) {
+                                final ch = _cauHois[index];
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                    child: Card(
+                                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      color: Colors.white.withOpacity(0.12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: BorderSide(
+                                          color: Colors.white.withOpacity(0.2),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      child: ListTile(
+                                        title: Text(
+                                          'Câu ${index + 1}: ${ch.noiDung}',
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                                        ),
+                                        subtitle: Text(
+                                          'Đáp án đúng: ${ch.dapAnDung}',
+                                          style: const TextStyle(color: Colors.white70),
+                                        ),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                                              onPressed: () => _showFormDialog(cauHoi: ch),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                              onPressed: () => _confirmDelete(ch),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
       floatingActionButton: _selectedDeThiId == null
           ? null
           : FloatingActionButton(
-              backgroundColor: Colors.blueGrey,
+              backgroundColor: Colors.purple.shade600,
               onPressed: () => _showFormDialog(),
               child: const Icon(Icons.add, color: Colors.white),
             ),

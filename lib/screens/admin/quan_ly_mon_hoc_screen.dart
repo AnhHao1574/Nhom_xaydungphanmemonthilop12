@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../models/mon_hoc.dart';
@@ -133,48 +134,95 @@ class _QuanLyMonHocScreenState extends State<QuanLyMonHocScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Quản Lý Môn Học'),
-        backgroundColor: Colors.blueGrey,
+        title: const Text('Quản Lý Môn Học', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: Colors.white,
       ),
-      body: _monHocs.isEmpty
-          ? const Center(child: Text('Chưa có môn học. Nhấn + để thêm.'))
-          : ListView.builder(
-              itemCount: _monHocs.length,
-              itemBuilder: (context, index) {
-                final mh = _monHocs[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(child: Text('${mh.id}')),
-                    title: Text(
-                      mh.tenMon,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(mh.moTa ?? 'Không có mô tả'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _showFormDialog(monHoc: mh),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDelete(mh),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+      body: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'images/hinhnen.png',
+              fit: BoxFit.cover,
             ),
+          ),
+          // Dark Overlay
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.35),
+            ),
+          ),
+          SafeArea(
+            child: _monHocs.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Chưa có môn học. Nhấn + để thêm.',
+                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _monHocs.length,
+                    itemBuilder: (context, index) {
+                      final mh = _monHocs[index];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            color: Colors.white.withOpacity(0.12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.green.withOpacity(0.3),
+                                child: Text(
+                                  '${mh.id}',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              title: Text(
+                                mh.tenMon,
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              subtitle: Text(
+                                mh.moTa ?? 'Không có mô tả',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                                    onPressed: () => _showFormDialog(monHoc: mh),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                    onPressed: () => _confirmDelete(mh),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Colors.green.shade600,
         onPressed: () => _showFormDialog(),
         child: const Icon(Icons.add, color: Colors.white),
       ),

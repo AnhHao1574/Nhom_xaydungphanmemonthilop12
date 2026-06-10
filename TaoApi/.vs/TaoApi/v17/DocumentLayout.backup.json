@@ -3,6 +3,22 @@
   "WorkspaceRootPath": "D:\\app-on-thi-12-main\\TaoApi\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|d:\\app-on-thi-12-main\\taoapi\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|d:\\app-on-thi-12-main\\taoapi\\database_schema.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:database_schema.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|d:\\app-on-thi-12-main\\taoapi\\database_data_utf8.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:database_data_utf8.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|d:\\app-on-thi-12-main\\taoapi\\database_data.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}",
+      "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:database_data.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|d:\\app-on-thi-12-main\\taoapi\\controllers\\lichsulambaicontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:controllers\\lichsulambaicontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -19,10 +35,6 @@
       "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|d:\\app-on-thi-12-main\\taoapi\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|d:\\app-on-thi-12-main\\taoapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6A38AC87-630D-45E7-BC7B-59934A41B957}|TaoApi.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
@@ -34,24 +46,56 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
+              "Title": "database_schema.sql ",
+              "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\database_schema.sql",
+              "RelativeDocumentMoniker": "database_schema.sql",
+              "ToolTip": "D:\\app-on-thi-12-main\\TaoApi\\database_schema.sql",
+              "RelativeToolTip": "database_schema.sql",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-06-09T04:32:11.151Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "database_data_utf8.sql ",
+              "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\database_data_utf8.sql",
+              "RelativeDocumentMoniker": "database_data_utf8.sql",
+              "ToolTip": "D:\\app-on-thi-12-main\\TaoApi\\database_data_utf8.sql",
+              "RelativeToolTip": "database_data_utf8.sql",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-06-09T04:32:01.718Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "database_data.sql ",
+              "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\database_data.sql",
+              "RelativeDocumentMoniker": "database_data.sql",
+              "ToolTip": "D:\\app-on-thi-12-main\\TaoApi\\database_data.sql",
+              "RelativeToolTip": "database_data.sql",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-06-09T04:31:56.919Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "LichSuLamBaiController.cs",
               "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\Controllers\\LichSuLamBaiController.cs",
               "RelativeDocumentMoniker": "Controllers\\LichSuLamBaiController.cs",
               "ToolTip": "D:\\app-on-thi-12-main\\TaoApi\\Controllers\\LichSuLamBaiController.cs",
               "RelativeToolTip": "Controllers\\LichSuLamBaiController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-09T03:53:37.642Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-09T03:53:37.642Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 6,
               "Title": "AuthController.cs",
               "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\Controllers\\AuthController.cs",
               "RelativeDocumentMoniker": "Controllers\\AuthController.cs",
@@ -59,12 +103,11 @@
               "RelativeToolTip": "Controllers\\AuthController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-09T03:53:35.657Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-09T03:53:35.657Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 7,
               "Title": "appsettings.json",
               "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
@@ -72,25 +115,24 @@
               "RelativeToolTip": "appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-06-09T03:53:26.767Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-09T03:53:26.767Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 0,
               "Title": "AppDbContext.cs",
               "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\Data\\AppDbContext.cs",
               "RelativeDocumentMoniker": "Data\\AppDbContext.cs",
               "ToolTip": "D:\\app-on-thi-12-main\\TaoApi\\Data\\AppDbContext.cs",
               "RelativeToolTip": "Data\\AppDbContext.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAB4AAAAAAAAAAAAAADYAAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-09T03:41:39.845Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
               "Title": "CauHoiController.cs",
               "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\Controllers\\CauHoiController.cs",
               "RelativeDocumentMoniker": "Controllers\\CauHoiController.cs",
@@ -98,12 +140,11 @@
               "RelativeToolTip": "Controllers\\CauHoiController.cs",
               "ViewState": "AgIAADMAAAAAAAAAAAAAAEkAAAAkAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-09T03:39:29.866Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-09T03:39:29.866Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 8,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\app-on-thi-12-main\\TaoApi\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
@@ -111,8 +152,7 @@
               "RelativeToolTip": "Program.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-09T03:34:59.872Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-09T03:34:59.872Z"
             }
           ]
         }

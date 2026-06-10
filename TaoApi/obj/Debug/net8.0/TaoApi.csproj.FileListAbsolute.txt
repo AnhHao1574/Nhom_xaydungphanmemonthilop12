@@ -143,4 +143,3 @@ D:\app-on-thi-12-main\TaoApi\obj\Debug\net8.0\refint\TaoApi.dll
 D:\app-on-thi-12-main\TaoApi\obj\Debug\net8.0\TaoApi.pdb
 D:\app-on-thi-12-main\TaoApi\obj\Debug\net8.0\TaoApi.genruntimeconfig.cache
 D:\app-on-thi-12-main\TaoApi\obj\Debug\net8.0\ref\TaoApi.dll
-D:\app-on-thi-12-main\TaoApi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

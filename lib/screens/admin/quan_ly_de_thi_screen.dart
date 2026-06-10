@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../models/de_thi.dart';
@@ -56,6 +57,7 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   value: selectedMon,
                   decoration: const InputDecoration(
                     labelText: 'Môn học *',
@@ -64,7 +66,7 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
                   items: _monHocs
                       .map((m) => DropdownMenuItem(
                             value: m.id,
-                            child: Text(m.tenMon),
+                            child: Text(m.tenMon, overflow: TextOverflow.ellipsis),
                           ))
                       .toList(),
                   onChanged: (v) => setDialogState(() => selectedMon = v!),
@@ -163,43 +165,88 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Quản Lý Đề Thi'),
-        backgroundColor: Colors.blueGrey,
+        title: const Text('Quản Lý Đề Thi', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: Colors.white,
       ),
-      body: _deThis.isEmpty
-          ? const Center(child: Text('Chưa có đề thi. Nhấn + để thêm.'))
-          : ListView.builder(
-              itemCount: _deThis.length,
-              itemBuilder: (context, index) {
-                final dt = _deThis[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: ListTile(
-                    title: Text(dt.tenDe, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      'Môn: ${_tenMonHoc(dt.monHocId)} | Mã: ${dt.maDe}',
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _showFormDialog(deThi: dt),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDelete(dt),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+      body: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'images/hinhnen.png',
+              fit: BoxFit.cover,
             ),
+          ),
+          // Dark Overlay
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.35),
+            ),
+          ),
+          SafeArea(
+            child: _deThis.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Chưa có đề thi. Nhấn + để thêm.',
+                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _deThis.length,
+                    itemBuilder: (context, index) {
+                      final dt = _deThis[index];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            color: Colors.white.withOpacity(0.12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                dt.tenDe, 
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              subtitle: Text(
+                                'Môn: ${_tenMonHoc(dt.monHocId)} | Mã: ${dt.maDe}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                                    onPressed: () => _showFormDialog(deThi: dt),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                    onPressed: () => _confirmDelete(dt),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Colors.blue.shade600,
         onPressed: _monHocs.isEmpty
             ? () => ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Hãy thêm môn học trước!')),

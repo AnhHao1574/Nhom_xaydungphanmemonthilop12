@@ -18,24 +18,30 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DeThi> _allDeThis = [];
   bool _isLoading = true;
 
-  // Lưu số lượng câu hỏi hoặc số chương tự động đếm từ DB của từng môn
-  // ignore: unused_field
-  Map<int, int> _itemsCountByMon = {1: 0, 2: 0, 3: 0, 4: 0};
-
   final List<Map<String, dynamic>> _categories = [
-    {'id': 1, 'name': 'Hóa Học', 'icon': Icons.science, 'color': Colors.green},
+    {
+      'id': 1,
+      'name': 'Hóa Học',
+      'icon': Icons.science,
+      'gradient': [Color(0xFF43A047), Color(0xFF66BB6A)],
+    },
     {
       'id': 2,
       'name': 'Toán Học',
       'icon': Icons.calculate,
-      'color': Colors.blue,
+      'gradient': [Color(0xFF1E88E5), Color(0xFF42A5F5)],
     },
-    {'id': 3, 'name': 'Vật Lý 12', 'icon': Icons.bolt, 'color': Colors.purple},
+    {
+      'id': 3,
+      'name': 'Vật Lý 12',
+      'icon': Icons.bolt,
+      'gradient': [Color(0xFF7B1FA2), Color(0xFFAB47BC)],
+    },
     {
       'id': 4,
       'name': 'Lịch Sử 12',
       'icon': Icons.history_edu,
-      'color': Colors.orange,
+      'gradient': [Color(0xFFE65100), Color(0xFFFB8C00)],
     },
   ];
 
@@ -59,13 +65,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = AuthService.instance.currentUser;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Ôn Thi Lớp 12'),
-        backgroundColor: Colors.blueAccent,
+        title: const Text(
+          'Ôn Thi Lớp 12',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF1565C0),
         foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
+            tooltip: 'Lịch sử làm bài',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const LichSuScreen()),
@@ -76,89 +88,129 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (user != null)
-                    Text(
-                      'Chào mừng, ${user.hoTen ?? user.tenDangNhap}!',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+          : Column(
+              children: [
+                // Header greeting section with gradient
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Danh mục môn học:',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
                   ),
-                  const SizedBox(height: 15),
-                  // Hiển thị Grid các môn học
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 15,
-                          mainAxisSpacing: 15,
-                          childAspectRatio: 1.2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (user != null)
+                        Text(
+                          'Xin chào, ${user.hoTen ?? user.tenDangNhap}!',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                    itemCount: _categories.length,
-                    itemBuilder: (context, index) {
-                      final cat = _categories[index];
-                      return _buildCategoryCard(cat);
-                    },
+                      const SizedBox(height: 4),
+                      Text(
+                        'Chọn môn học để bắt đầu ôn thi',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Category Grid
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        childAspectRatio: 1.15,
+                      ),
+                      itemCount: _categories.length,
+                      itemBuilder: (context, index) {
+                        final cat = _categories[index];
+                        return _buildCategoryCard(cat);
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
     );
   }
 
   Widget _buildCategoryCard(Map<String, dynamic> cat) {
-    // Đếm số lượng đề thi cho mỗi môn để hiển thị số lượng "tự động"
     int count = _allDeThis
         .where((de) => (de.monHocId) == (cat['id'] as int))
         .length;
 
-    return InkWell(
-      onTap: () {
-        // Lọc danh sách đề theo môn
-        List<DeThi> filteredList = _allDeThis
-            .where((de) => (de.monHocId) == (cat['id'] as int))
-            .toList();
+    final gradientColors = cat['gradient'] as List<Color>;
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => DanhSachDeByMonScreen(
-              subjectName: cat['name'],
-              exams: filteredList,
-              color: cat['color'],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          List<DeThi> filteredList = _allDeThis
+              .where((de) => (de.monHocId) == (cat['id'] as int))
+              .toList();
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DanhSachDeByMonScreen(
+                subjectName: cat['name'],
+                exams: filteredList,
+                gradientColors: gradientColors,
+              ),
             ),
-          ),
-        );
-      },
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          );
+        },
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
             gradient: LinearGradient(
-              colors: [cat['color'], cat['color'].withOpacity(0.7)],
+              colors: gradientColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: gradientColors[0].withOpacity(0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(cat['icon'], size: 40, color: Colors.white),
-              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(cat['icon'], size: 32, color: Colors.white),
+              ),
+              const SizedBox(height: 10),
               Text(
                 cat['name'],
                 style: const TextStyle(
@@ -167,9 +219,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
                 '$count đề thi',
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -183,60 +239,130 @@ class _HomeScreenState extends State<HomeScreen> {
 class DanhSachDeByMonScreen extends StatelessWidget {
   final String subjectName;
   final List<DeThi> exams;
-  final Color color;
+  final List<Color> gradientColors;
 
   const DanhSachDeByMonScreen({
     super.key,
     required this.subjectName,
     required this.exams,
-    required this.color,
+    required this.gradientColors,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('Đề thi $subjectName'),
-        backgroundColor: color,
+        title: Text(
+          subjectName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: gradientColors[0],
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: exams.isEmpty
-          ? const Center(child: Text('Hiện chưa có đề thi cho môn học này.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: exams.length,
-              itemBuilder: (context, index) {
-                final dt = exams[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: color,
+      body: Column(
+        children: [
+          // Gradient header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Text(
+              '${exams.length} đề thi có sẵn',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.85),
+              ),
+            ),
+          ),
+
+          // Exam list
+          Expanded(
+            child: exams.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
                       child: Text(
-                        '${index + 1}',
-                        style: const TextStyle(color: Colors.white),
+                        'Hiện chưa có đề thi cho môn học này.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
-                    title: Text(
-                      dt.tenDe,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      'Thời gian: ${dt.thoiGian} phút | Mã đề: ${dt.maDe}',
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DeThiScreen(deThi: dt),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    itemCount: exams.length,
+                    itemBuilder: (context, index) {
+                      final dt = exams[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          leading: CircleAvatar(
+                            backgroundColor: gradientColors[0],
+                            child: Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            dt.tenDe,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${dt.thoiGian} phút  •  Mã: ${dt.maDe}',
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 13,
+                            ),
+                          ),
+                          trailing: Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: gradientColors[0].withOpacity(0.6),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DeThiScreen(deThi: dt),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
                   ),
-                );
-              },
-            ),
+          ),
+        ],
+      ),
     );
   }
 }
