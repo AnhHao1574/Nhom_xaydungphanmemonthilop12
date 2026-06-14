@@ -139,6 +139,47 @@ class _LamBaiScreenState extends State<LamBaiScreen> {
     );
   }
 
+  Future<bool> _onWillPop() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 8),
+            Text('Cảnh báo!'),
+          ],
+        ),
+        content: const Text(
+          'Bạn đang trong quá trình làm bài thi. Nếu thoát bây giờ, kết quả làm bài sẽ không được lưu.\n\nBạn có muốn nộp bài luôn hay muốn thoát không lưu?',
+          style: TextStyle(height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false), // Hủy, ở lại
+            child: const Text('Làm tiếp', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), // Thoát không lưu
+            child: const Text('Thoát không lưu', style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(context, false);
+              _nopBai();
+            },
+            child: const Text('Nộp bài'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -152,7 +193,9 @@ class _LamBaiScreenState extends State<LamBaiScreen> {
       );
     }
 
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
       appBar: AppBar(
         title: Text('Câu ${_currentIndex + 1}/${_danhSachCauHoi.length}'),
         actions: [
@@ -225,6 +268,7 @@ class _LamBaiScreenState extends State<LamBaiScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

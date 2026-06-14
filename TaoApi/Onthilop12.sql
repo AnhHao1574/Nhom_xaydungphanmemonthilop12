@@ -3,11 +3,11 @@
 -- ======================================================
 
 -- SQL Server Database Schema Creation Script
--- Create Database (Optional, uncomment if needed)
--- CREATE DATABASE Onthilop12;
--- GO
--- USE Onthilop12;
--- GO
+Create Database (Optional, uncomment if needed)
+CREATE DATABASE Onthilop12;
+GO
+USE Onthilop12;
+GO
 
 -- 1. Create table VaiTro
 IF OBJECT_ID('NguoiDung', 'U') IS NOT NULL DROP TABLE NguoiDung;
@@ -79,7 +79,7 @@ CREATE TABLE LichSuLamBai (
     CONSTRAINT FK_LichSuLamBai_Chuong FOREIGN KEY (MaChuong) REFERENCES Chuong(MaChuong)
 );
 
-
+select * from NguoiDung
 -- ======================================================
 -- SEED DATA
 -- ======================================================
@@ -985,3 +985,44 @@ INSERT INTO NguoiDung (MaNguoiDung, TenDangNhap, MatKhau, HoTen, Email, MaVaiTro
 INSERT INTO NguoiDung (MaNguoiDung, TenDangNhap, MatKhau, HoTen, Email, MaVaiTro) VALUES (4, N'hs02', N'123', N'Lê Thị Học Sinh 02', N'hs02@Gmail.com', 3);
 INSERT INTO NguoiDung (MaNguoiDung, TenDangNhap, MatKhau, HoTen, Email, MaVaiTro) VALUES (5, N'hs03', N'123', N'Phạm Minh Học Sinh 03', N'hs03@Gmail.com', 3);
 SET IDENTITY_INSERT NguoiDung OFF;
+
+
+USE OnThiLop12;
+GO
+
+SELECT 
+    m.TenMon AS [Tên Môn Học],
+    c.MaChuong AS [Mã Đề (ID)],
+    c.TenChuong AS [Tên Đề Thi],
+    c.SoThuTu AS [Số Thứ Tự]
+FROM Chuong c
+INNER JOIN MonHoc m ON c.MaMon = m.MaMon
+ORDER BY m.TenMon, c.SoThuTu;
+
+
+USE OnThiLop12;
+GO
+
+SELECT 
+    m.TenMon AS [Tên Môn Học],
+    c.MaChuong AS [Mã Đề (ID)],
+    c.TenChuong AS [Tên Đề Thi],
+    c.SoThuTu AS [Số Thứ Tự]
+FROM Chuong c
+INNER JOIN MonHoc m ON c.MaMon = m.MaMon
+WHERE m.TenMon LIKE N'%Sinh hoc%' -- Thay đổi tên môn học cần tìm ở đây
+ORDER BY c.SoThuTu;
+
+
+USE OnThiLop12;
+GO
+
+SELECT 
+    m.TenMon AS [Tên Môn Học],
+    c.TenChuong AS [Tên Đề Thi],
+    COUNT(ch.MaCauHoi) AS [Số Lượng Câu Hỏi Cào Được]
+FROM Chuong c
+INNER JOIN MonHoc m ON c.MaMon = m.MaMon
+LEFT JOIN CauHoi ch ON c.MaChuong = ch.MaChuong
+GROUP BY m.TenMon, c.TenChuong, c.MaChuong
+ORDER BY m.TenMon, c.TenChuong;

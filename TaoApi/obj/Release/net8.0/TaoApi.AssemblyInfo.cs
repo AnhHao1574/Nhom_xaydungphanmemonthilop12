@@ -13,7 +13,7 @@ using System.Reflection;
 
 [assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("faef8b85-4181-446c-b36c-faf5b2f1a9d5")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("TaoApi")]
-[assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+[assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+57d68765d13397409c86dd78e8a675682a0f6d17")]
 [assembly: System.Reflection.AssemblyProductAttribute("TaoApi")]

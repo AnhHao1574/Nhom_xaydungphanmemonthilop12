@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../models/de_thi.dart';
 import '../../models/mon_hoc.dart';
 import '../../services/admin_service.dart';
+import '../../services/crawler_service.dart';
 
 class QuanLyDeThiScreen extends StatefulWidget {
   const QuanLyDeThiScreen({super.key});
@@ -16,6 +17,7 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
   final _adminService = AdminService.instance;
   List<DeThi> _deThis = [];
   List<MonHoc> _monHocs = [];
+  int? _selectedFilterMonHocId;
 
   @override
   void initState() {
@@ -44,91 +46,182 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
   void _showFormDialog({DeThi? deThi}) {
     final tenCtrl = TextEditingController(text: deThi?.tenDe ?? '');
     final sttCtrl = TextEditingController(text: '${deThi?.soThuTu ?? ''}');
+    final crawlLinkCtrl = TextEditingController();
     int selectedMon = deThi?.monHocId ?? (_monHocs.isNotEmpty ? _monHocs.first.id! : 1);
     final isEdit = deThi != null;
+    bool isCrawling = false;
 
     showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? 'Sửa Đề Thi' : 'Thêm Đề Thi'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<int>(
-                  isExpanded: true,
-                  value: selectedMon,
-                  decoration: const InputDecoration(
-                    labelText: 'Môn học *',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _monHocs
-                      .map((m) => DropdownMenuItem(
-                            value: m.id,
-                            child: Text(m.tenMon, overflow: TextOverflow.ellipsis),
-                          ))
-                      .toList(),
-                  onChanged: (v) => setDialogState(() => selectedMon = v!),
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (builderCtx, setDialogState) {
+          if (isCrawling) {
+            return WillPopScope(
+              onWillPop: () async => false,
+              child: const AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Đang cào dữ liệu câu hỏi từ web...\nVui lòng đợi.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: tenCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên đề thi *',
-                    border: OutlineInputBorder(),
-                  ),
+              ),
+            );
+          }
+
+          return WillPopScope(
+            onWillPop: () async => true,
+            child: AlertDialog(
+              title: Text(isEdit ? 'Sửa Đề Thi' : 'Thêm Đề Thi'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<int>(
+                      isExpanded: true,
+                      value: selectedMon,
+                      decoration: const InputDecoration(
+                        labelText: 'Môn học *',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _monHocs
+                          .map((m) => DropdownMenuItem(
+                                value: m.id,
+                                child: Text(m.tenMon, overflow: TextOverflow.ellipsis),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setDialogState(() => selectedMon = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: tenCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Tên đề thi *',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: sttCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Số thứ tự (để trống = tự động)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    if (!isEdit) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: crawlLinkCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Link cào câu hỏi (Vietjack / detracnghiem) (Tùy chọn)',
+                          helperText: 'Hệ thống sẽ cào câu hỏi trực tiếp cho đề thi này',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: sttCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Số thứ tự (để trống = tự động)',
-                    border: OutlineInputBorder(),
-                  ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(builderCtx),
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (tenCtrl.text.trim().isEmpty) return;
+                    final stt = int.tryParse(sttCtrl.text.trim());
+                    if (isEdit) {
+                      await _adminService.capNhatDeThi(DeThi(
+                        id: deThi.id,
+                        monHocId: selectedMon,
+                        maDe: deThi.maDe,
+                        tenDe: tenCtrl.text.trim(),
+                        thoiGian: deThi.thoiGian,
+                        namThi: deThi.namThi,
+                        soThuTu: stt ?? deThi.soThuTu,
+                      ));
+                      if (builderCtx.mounted) {
+                        Navigator.pop(builderCtx);
+                        _loadData();
+                      }
+                    } else {
+                      // Tạo mới đề thi và lấy ID
+                      final newDeThiId = await _adminService.themDeThi(DeThi(
+                        monHocId: selectedMon,
+                        maDe: 'NEW',
+                        tenDe: tenCtrl.text.trim(),
+                        thoiGian: 45,
+                        namThi: DateTime.now().year,
+                        soThuTu: stt,
+                      ));
+
+                      final link = crawlLinkCtrl.text.trim();
+                      if (link.isNotEmpty && newDeThiId > 0) {
+                        setDialogState(() {
+                          isCrawling = true;
+                        });
+
+                        try {
+                          final success = await CrawlerService().crawlAndImport(newDeThiId, link);
+
+                          if (builderCtx.mounted) {
+                            Navigator.pop(builderCtx);
+                          }
+
+                          if (success) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Đã thêm đề thi "${tenCtrl.text.trim()}" và cào câu hỏi thành công!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Tạo đề thi thành công nhưng cào câu hỏi thất bại hoặc link không đúng cấu trúc.'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (builderCtx.mounted) {
+                            Navigator.pop(builderCtx);
+                          }
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi trong quá trình cào câu hỏi: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      } else {
+                        if (builderCtx.mounted) {
+                          Navigator.pop(builderCtx);
+                        }
+                      }
+                      _loadData();
+                    }
+                  },
+                  child: Text(isEdit ? 'Cập nhật' : 'Thêm'),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (tenCtrl.text.trim().isEmpty) return;
-                final stt = int.tryParse(sttCtrl.text.trim());
-                if (isEdit) {
-                  await _adminService.capNhatDeThi(DeThi(
-                    id: deThi.id,
-                    monHocId: selectedMon,
-                    maDe: deThi.maDe,
-                    tenDe: tenCtrl.text.trim(),
-                    thoiGian: deThi.thoiGian,
-                    namThi: deThi.namThi,
-                    soThuTu: stt ?? deThi.soThuTu,
-                  ));
-                } else {
-                  await _adminService.themDeThi(DeThi(
-                    monHocId: selectedMon,
-                    maDe: 'NEW',
-                    tenDe: tenCtrl.text.trim(),
-                    thoiGian: 45,
-                    namThi: DateTime.now().year,
-                    soThuTu: stt,
-                  ));
-                }
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  _loadData();
-                }
-              },
-              child: Text(isEdit ? 'Cập nhật' : 'Thêm'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -136,22 +229,22 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
   void _confirmDelete(DeThi deThi) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('Xác nhận xóa'),
         content: Text(
           'Xóa đề "${deThi.tenDe}"?\nTất cả câu hỏi và lịch sử liên quan cũng sẽ bị xóa.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Hủy'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               await _adminService.xoaDeThi(deThi.id!);
-              if (context.mounted) {
-                Navigator.pop(context);
+              if (dialogCtx.mounted) {
+                Navigator.pop(dialogCtx);
                 _loadData();
               }
             },
@@ -164,6 +257,10 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredDeThis = _selectedFilterMonHocId == null
+        ? _deThis
+        : _deThis.where((dt) => dt.monHocId == _selectedFilterMonHocId).toList();
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -188,60 +285,117 @@ class _QuanLyDeThiScreenState extends State<QuanLyDeThiScreen> {
             ),
           ),
           SafeArea(
-            child: _deThis.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Chưa có đề thi. Nhấn + để thêm.',
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _deThis.length,
-                    itemBuilder: (context, index) {
-                      final dt = _deThis[index];
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                          child: Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            color: Colors.white.withOpacity(0.12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(
-                                color: Colors.white.withOpacity(0.2),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: ListTile(
-                              title: Text(
-                                dt.tenDe, 
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                              subtitle: Text(
-                                'Môn: ${_tenMonHoc(dt.monHocId)} | Mã: ${dt.maDe}',
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                                    onPressed: () => _showFormDialog(deThi: dt),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.redAccent),
-                                    onPressed: () => _confirmDelete(dt),
-                                  ),
-                                ],
-                              ),
-                            ),
+            child: Column(
+              children: [
+                // Dropdown Filter for Subjects
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 1.2,
                           ),
                         ),
-                      );
-                    },
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int?>(
+                            dropdownColor: const Color(0xFF212121),
+                            isExpanded: true,
+                            value: _selectedFilterMonHocId,
+                            hint: const Text(
+                              'Lọc theo môn học (Tất cả)',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            style: const TextStyle(color: Colors.white, fontSize: 15),
+                            icon: const Icon(Icons.filter_list, color: Colors.white),
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('Tất cả môn học', style: TextStyle(color: Colors.white)),
+                              ),
+                              ..._monHocs.map((m) => DropdownMenuItem<int?>(
+                                value: m.id,
+                                child: Text(m.tenMon, style: const TextStyle(color: Colors.white)),
+                              )),
+                            ],
+                            onChanged: (v) {
+                              setState(() {
+                                _selectedFilterMonHocId = v;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
+                ),
+                Expanded(
+                  child: filteredDeThis.isEmpty
+                      ? Center(
+                          child: Text(
+                            _selectedFilterMonHocId == null
+                                ? 'Chưa có đề thi. Nhấn + để thêm.'
+                                : 'Môn học này chưa có đề thi nào.',
+                            style: const TextStyle(color: Colors.white70, fontSize: 16),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          itemCount: filteredDeThis.length,
+                          itemBuilder: (context, index) {
+                            final dt = filteredDeThis[index];
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                child: Card(
+                                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  color: Colors.white.withOpacity(0.12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(
+                                      color: Colors.white.withOpacity(0.2),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: ListTile(
+                                    title: Text(
+                                      dt.tenDe, 
+                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                                    ),
+                                    subtitle: Text(
+                                      'Môn: ${_tenMonHoc(dt.monHocId)} | Mã: ${dt.maDe}',
+                                      style: const TextStyle(color: Colors.white70),
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                                          onPressed: () => _showFormDialog(deThi: dt),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                          onPressed: () => _confirmDelete(dt),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

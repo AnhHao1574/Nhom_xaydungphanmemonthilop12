@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "B4xQHBBVQOk=",
+  "dgSpecHash": "ORyR/BQQTjA=",
   "success": true,
-  "projectFilePath": "D:\\app-on-thi-12-main\\TaoApi\\TaoApi.csproj",
+  "projectFilePath": "D:\\Nhom06_DeTai01_Hao_Phat_Manh_Dat_Gia\\app-on-thi-12-main\\TaoApi\\TaoApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\azure.core\\1.35.0\\azure.core.1.35.0.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\azure.identity\\1.10.3\\azure.identity.1.10.3.nupkg.sha512",

@@ -17,8 +17,14 @@ class DatabaseHelper {
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
 
+  // Địa chỉ IP của máy tính chạy backend API.
+  // - Nếu dùng điện thoại thật: nhập IP của máy tính (Hiện tại là: '192.168.1.165').
+  // - Nếu dùng máy ảo Android (Emulator): có thể dùng '10.0.2.2' hoặc IP máy tính.
+  // - Lưu ý: Điện thoại thật và máy tính cần kết nối chung một mạng Wi-Fi.
+  static const String serverIp = '192.168.1.165';
+
   static final String baseUrl = Platform.isAndroid
-      ? 'http://10.0.2.2:5094/api'
+      ? 'http://$serverIp:5094/api'
       : 'http://localhost:5094/api';
 
   // Getter giả lập cho database để không làm lỗi file main.dart
